@@ -4,7 +4,22 @@
 
 ## Last session
 
-**Date:** 2026-04-19 (fifth slice)
+**Date:** 2026-04-19 (sixth slice — npm publish)
+**Summary:** Shipped v0.1.0 to npm. The project is now `npx -y`-installable for any MCP client, worldwide. Along the way, three npm-ecosystem incidents taught us how the registry actually behaves.
+
+**Done (this slice):**
+- **`@feralcaraz/project-memory-mcp@0.1.0` live on npm.** Published with `publishConfig.access=public` (required because scoped packages default to private). Package is 28.5kB, 47 files, tarball includes `dist/` + `README.md` + `LICENSE` + `package.json` — nothing else (verified via `npm publish --dry-run`).
+- **Authentication: granular access token with bypass-2FA.** npm now requires 2FA for all publishes and only offers WebAuthn/security-key as the TOTP replacement — no authenticator-app option. Workaround: security key for account 2FA + granular access token for CLI publishes. Token has `publish + bypass-2fa + all-packages + read/write + no orgs`, stored in `~/.npmrc` under `//registry.npmjs.org/:_authToken=…`. Rotated once mid-flow after the token string was accidentally pasted into a chat log — the revoke-and-regenerate cycle is ~3 minutes in the npm web UI, so a leaked token is cheap to recover from as long as you notice fast.
+- **README: dual install paths.** Primary: `npx -y @feralcaraz/project-memory-mcp` (the headline use case). Secondary: clone + `npm run build` (for devs). Claude Desktop config shown with both forms.
+- **Commit + tag + push.** `658ba51` on main. Tag `v0.1.0` pushed. Repo now matches the published version bit-for-bit.
+
+**Three npm-ecosystem incidents worth remembering:**
+1. **Unpublished names are permanently reserved.** `project-memory-mcp` (unscoped) was unpublished on 2026-03-29 — likely a prior experiment of our own. Result: `npm publish` with that name returns `Cannot publish over previously published version` even though `npm view` 404s. The name can never be reclaimed. npm's anti-"left-pad" policy. Pivoted to scoped `@feralcaraz/project-memory-mcp`, which is always available under our own scope. **Lesson:** when reserving a package name, publish `0.0.1` and leave it. Never unpublish during setup.
+2. **Publish confirmation does NOT mean registry propagation.** The `+ @scope/pkg@version` line in `npm publish` output is the *upload* confirmation. The read endpoint (`npm view`, website) can lag by seconds to a couple of minutes. Don't panic on an immediate-post-publish 404; wait 60s and retry. We thought we had a scope-registry misconfig; turned out to be plain propagation lag.
+3. **The first 2FA error can hide a successful upload.** An early `npm publish` attempt that errored with `403 Two-factor authentication required` had actually uploaded the version before the auth check rejected it. When we tried to republish the same version, we got `Cannot publish over previously published version 0.1.0` — the telltale sign that a "failed" publish wasn't actually fully failed. Always consider a publish half-successful after an auth failure.
+
+### Previous slice (2026-04-19, fifth)
+
 **Summary:** Closed the weekly loop. Five clean commits packaged via script, pushed to GitHub, CI green on the first matrix run, and the opener dogfood in a live Claude Desktop session validated the project's whole premise.
 
 **Done (this slice):**
@@ -85,45 +100,39 @@ Takeaways:
 
 ## Current state
 
-- **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests + 5 commits pushed + CI green + dogfood validated. Well ahead of the S1–3 target.
-- **Tests:** 46/46 passing locally. CI green on first matrix run (Node 20 & 22 × ubuntu/macos, 22s on `a14f54e`).
-- **Repo:** `feralcarazp/project-memory-mcp` public on GitHub.
-- **On Fer's Mac:** all 5 tools verified live via dogfood in a fresh Claude Desktop session — opener returned project name, stack, file count, ADR count up to 012, last commit hash, and all five open questions in ~750 tokens.
-- **Ergonomic note:** the session now has a proper opener. `set_active_project(path)` → `get_open_questions()` → `get_dependency_graph()` is 3 calls, ~750 tokens total, zero repeated path arguments. Validated end-to-end.
-- **Process discovery:** update `MEMORY.md` at session **close**, not session start. Updating it at the start means the previous session's work has already been "lost" for one reading.
+- **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests + 6 commits pushed + CI green + dogfood validated + **published to npm**. Well ahead of the S1–3 target.
+- **Tests:** 46/46 passing locally. CI green on the matrix (Node 20 & 22 × ubuntu/macos).
+- **Repo:** `feralcarazp/project-memory-mcp` public on GitHub. Tagged `v0.1.0` matching the published npm version.
+- **npm:** `@feralcaraz/project-memory-mcp@0.1.0` live at `https://www.npmjs.com/package/@feralcaraz/project-memory-mcp`. Installable as `npx -y @feralcaraz/project-memory-mcp` from any machine.
+- **On Fer's Mac:** all 5 tools verified live via dogfood in a fresh Claude Desktop session.
+- **Ergonomic note:** session opener is `set_active_project(path)` → `get_open_questions()` → `get_dependency_graph()` — 3 calls, ~750 tokens total.
+- **Process discovery:** update `MEMORY.md` at session **close**, not session start.
 
 ## Next steps (suggested, in order)
 
-1. **npm publish — make `npx -y project-memory-mcp` work.** Concrete substeps:
-   - Decide final package name. `project-memory-mcp` is still the leading candidate — descriptive, matches repo. Alternatives considered and rejected: `mcp-project-memory` (just a suffix swap), `projmem-mcp` (cryptic), `@feralcarazp/project-memory-mcp` (scoped; adds friction to `npx` usage).
-   - Add `"bin": { "project-memory-mcp": "dist/index.js" }` to `package.json` so `npx` has an entrypoint. First line of `dist/index.js` already has the shebang from the TS source.
-   - Add `"files": ["dist", "README.md", "LICENSE"]` so we don't publish `tests/`, `scripts/`, `.github/`, etc.
-   - Set `"engines": { "node": ">=20" }` explicitly.
-   - `npm login` (create account if needed), then `npm publish --dry-run` to review the tarball contents, then `npm publish`.
-   - Update `README.md` "Install" section from the source-clone flow to the `npx -y project-memory-mcp` flow (keep source-clone as the dev option).
-   - Cut a git tag (`v0.1.0`) matching the published version.
-2. Tool #6 — strategic decision, not a next-sprint task:
-   - `summarize_file` (tree-sitter): biggest scope jump so far. Pays for itself if summary stays under ~200 tokens/file.
-   - `search_project` (semantic + keyword across code and docs): needs an indexing story; bigger than it sounds.
-   - Either way, no easy wins left in the "just parse structured text" category.
-3. Housekeeping once #1 lands:
-   - Bump `actions/checkout` and `actions/setup-node` to `@v5` whenever GitHub ships it — current `@v4` is throwing Node 20 deprecation warnings in CI (cosmetic).
+1. **Tool #6 — strategic decision.** The distribution story is done, so next is real feature work. Two candidates, both meaningful scope jumps:
+   - `summarize_file` (tree-sitter): AST-aware summary of a single file. Pays for itself if summary stays under ~200 tokens/file. Would be the first tool that needs a non-regex parser. Scope: add `tree-sitter` + language grammars, build per-language summarizer, wire adapter, write tests. 2–3 sessions.
+   - `search_project` (semantic + keyword across code and docs): needs an indexing story — where the index lives, when it gets built, how it gets invalidated. Bigger than it sounds. 3–5 sessions.
+   - Lean `summarize_file` first: smaller surface, more obviously useful at small context budgets, validates tree-sitter as an infrastructure choice before betting on a bigger indexer.
+2. **Soft launch.** With v0.1.0 shipped, worth quietly telling a few dogfooders (maybe post the `npx` line + config block in a small Discord/Twitter thread) and watching what breaks first on other people's projects. No marketing push — we want real bug reports, not stars.
+3. **Housekeeping, low priority:**
+   - Bump `actions/checkout` and `actions/setup-node` to `@v5` whenever GitHub ships it (current `@v4` throws Node 20 deprecation warnings in CI — cosmetic).
    - Consider moving the token benchmark into CI as a regression guard (still leaning no).
+   - Regenerate the npm token before July expiration, narrower scope this time (`@feralcaraz/project-memory-mcp` only, not all packages).
 
 ## Open questions
 
-- Final npm package name. Leaning `project-memory-mcp` (unscoped) for the soft launch — resolve as part of the next step, not a future punt.
 - Should `get_open_questions` also parse `DECISIONS.md`'s `**Revisit when:**` markers? Would need a separate parser (ADR-010 punted). Wait until we have a concrete case.
 - Should `get_dependency_graph` ever resolve `tsconfig.json` `paths` aliases? ADR-011 says no for v1. Revisit when a dogfooder bumps into it.
 - Should the benchmark be part of CI as a regression guard on token counts? Still leaning local-only until we have more data points.
 - Should the active-project cache persist across server restarts (e.g. `~/.config/project-memory-mcp/session.json`)? ADR-012 said no on day one — revisit after a few weeks of real use if people keep re-setting the same project.
-- Tool #6 direction — `summarize_file` (tree-sitter) vs. `search_project` (indexing). Both are big scope jumps; neither is "free".
+- Tool #6 direction — `summarize_file` (tree-sitter) vs. `search_project` (indexing). Both are big scope jumps; leaning `summarize_file` first.
+- Should we drop the `@feralcaraz` scope for a "neutral" scope (e.g. a project org on npm) before the soft launch, so future contributors don't feel the name is personal property? Defer until we have contributors.
 
 ## Things we are NOT doing yet
 
 - No HTTP transport (stdio only).
 - No tree-sitter integration yet.
-- No npm publish.
 - No structured ADR parsing in `get_open_questions`.
 - No `tsconfig.json` `paths` resolution in `get_dependency_graph`.
 - No Python / Go / Rust support in `get_dependency_graph` — regex stays TS/JS-only.
