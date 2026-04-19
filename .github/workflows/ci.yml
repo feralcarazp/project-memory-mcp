@@ -1,0 +1,59 @@
+# CI — typecheck, build, and test on every push and PR.
+#
+# Deliberately small. We're a single-package TypeScript project with no
+# network dependencies at test time — anything fancier than "install,
+# typecheck, build, test" is overhead we'll regret maintaining.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Cancel in-flight runs on the same ref when a new commit arrives.
+  # Saves minutes and gives the latest push priority.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Node 20 is our declared minimum (package.json#engines); Node 22 is
+        # current LTS. Covering both catches "works on my machine" drift.
+        node: ["20", "22"]
+        # Ubuntu is the primary target (most CI, most servers). macOS catches
+        # path-separator and case-sensitivity surprises; Windows is out of
+        # scope for now (stdio behavior differs enough to warrant its own
+        # workflow when we need it).
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # simple-git walks real history during tests. Shallow clones
+          # (default fetch-depth: 1) haven't bitten us yet because our
+          # tests build their own temp repos, but leave a note for future-us:
+          # bump this if a test starts depending on the workflow repo's log.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm run build
+
+      - run: npm test
