@@ -4,7 +4,27 @@
 
 ## Last session
 
-**Date:** 2026-04-19 (seventh slice — first external user + docs for non-devs)
+**Date:** 2026-04-19 (eighth slice — discoverability polish: badges, multi-client install, keyword fan-out)
+**Summary:** After a conversation with ChatGPT about discoverability hacks, evaluated the generic SEO playbook against our actual stage. Rejected the "optimize for stars" framing (stars are lagging, not leading), rejected Next.js as a reference (wrong scale), accepted the cheap-and-useful subset: multi-client install docs, GitHub topics, Discussions, a demo gif, badges, richer npm keywords.
+
+**Done (this slice):**
+- **Multi-client install in README.** Added "Connect to Claude Code" (single-command via `claude mcp add --scope user`) and "Connect to Cursor" (Settings UI option A + `~/.cursor/mcp.json` option B). Claude Desktop remains the flagship with the step-by-step for non-devs; the two new sections are lighter because their target (devs using CLI tools) can read config JSON.
+- **Badge row at top of README.** npm version, npm weekly downloads, CI status, MIT license. Four static shields.io badges — render automatically from public data, zero maintenance.
+- **Demo gif placeholder.** HTML comment at top of README referencing `assets/demo.gif`. When Fer records a 15-second screencast of the session opener (set_active_project → get_open_questions → get_dependency_graph in a fresh Claude Desktop session), he drops it at `assets/demo.gif` and uncomments the line.
+- **package.json keywords fan-out.** From 6 keywords to 15: added `claude-desktop`, `claude-code`, `cursor`, `anthropic`, `ai-tools`, `ai-agents`, `persistent-memory`, `agent-memory`, `llm-tools`. npm and Google index these.
+- **Version bump: 0.1.1 → 0.1.2.** Still docs-only (plus keywords), still not republished to npm.
+
+**Not done (Fer's homework, handed off):**
+- GitHub repo **topics** (mcp, claude, model-context-protocol, anthropic, developer-tools, claude-desktop, claude-code, cursor, ai-tools, llm). One-time config on the repo page.
+- Enable **GitHub Discussions** in repo settings.
+- **Record the demo gif** (~15 seconds, session opener, Kap or Cmd+Shift+5).
+
+**Insights worth keeping:**
+1. **Stars are lagging, not leading.** The ChatGPT "optimize for stars" playbook skips the step that makes stars happen (real users, cited content, curated-list presence). Correct order: users → content → distribution → stars follow.
+2. **Wrong-scale references are a trap.** Next.js-level polish is irrelevant at 0-star stage. Peers are solo-built AI CLIs with 100-500 stars (simonw/llm, shell_gpt), not $3B-backed frameworks.
+3. **Cheap wins compound.** Badges + topics + multi-client install each cost minutes. Together they raise the "credibility floor" without forcing premature content work.
+
+### Previous slice (2026-04-19, seventh — first external user + docs for non-devs)
 **Summary:** Fer's brother attempted the first external install. It failed, and the failure mode itself is the finding: he pasted the MCP config block into a Claude chat expecting auto-installation instead of editing `claude_desktop_config.json` manually. That's not a user error — that's a reasonable expectation in 2026 and a clear gap in our onboarding. Shipped v0.1.1 (docs-only patch) rewriting the "Connect to Claude Desktop" section as a literal step-by-step recipe for non-devs.
 
 **Done (this slice):**

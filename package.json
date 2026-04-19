@@ -1,6 +1,6 @@
 {
   "name": "@feralcaraz/project-memory-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A neutral context layer for AI coding tools. MCP server that exposes structured, curated project context to any MCP-compatible client.",
   "type": "module",
   "main": "dist/index.js",
@@ -29,9 +29,18 @@
     "mcp",
     "model-context-protocol",
     "claude",
+    "claude-desktop",
+    "claude-code",
+    "cursor",
+    "anthropic",
     "ai",
+    "ai-tools",
+    "ai-agents",
     "developer-tools",
-    "context"
+    "context",
+    "persistent-memory",
+    "agent-memory",
+    "llm-tools"
   ],
   "author": "Fernando Alcaraz",
   "license": "MIT",

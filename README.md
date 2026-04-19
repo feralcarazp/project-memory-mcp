@@ -1,6 +1,14 @@
 # Project Memory MCP
 
+[![npm version](https://img.shields.io/npm/v/@feralcaraz/project-memory-mcp.svg)](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp)
+[![npm downloads](https://img.shields.io/npm/dw/@feralcaraz/project-memory-mcp.svg)](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp)
+[![CI](https://github.com/feralcarazp/project-memory-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/feralcarazp/project-memory-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/npm/l/@feralcaraz/project-memory-mcp.svg)](LICENSE)
+
 > A neutral context layer for AI coding tools. Exposes structured, curated project context to any MCP-compatible client (Claude Desktop, Cursor, Claude Code, etc.).
+
+<!-- When demo.gif is recorded, uncomment: -->
+<!-- ![Project Memory MCP demo](assets/demo.gif) -->
 
 **Status:** early development. Published to npm as [`@feralcaraz/project-memory-mcp`](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp).
 
@@ -107,6 +115,56 @@ Replace the path with a real folder on your machine. If the three calls run and 
 - **`spawn npx ENOENT` or similar error.** Node isn't installed or isn't in your `PATH`. Run `which npx` (Mac) or `where npx` (Windows) in a terminal. If it prints nothing, reinstall Node from nodejs.org.
 - **You see an old version even after updating.** `npx` caches packages. Force a refresh: in a terminal, run `npx clear-npx-cache` or delete the `~/.npm/_npx/` folder, then restart Claude Desktop.
 - **It works, then stops working later.** Check Claude Desktop's MCP log: View → Developer → Open MCP Log (or in `~/Library/Logs/Claude/mcp*.log` on Mac). Errors show up there when a tool call fails.
+
+## Connect to Claude Code
+
+If you use [Claude Code](https://claude.com/claude-code) (the CLI), a single command wires it in at user scope (available in every project you open):
+
+```bash
+claude mcp add --scope user project-memory -- npx -y @feralcaraz/project-memory-mcp
+```
+
+Confirm it's live:
+
+```bash
+claude mcp list
+```
+
+You should see `project-memory` in the list. Start a new Claude Code session and the five tools become available. For project-scoped installs or other options, see the [Claude Code MCP docs](https://docs.claude.com/en/docs/claude-code/mcp).
+
+## Connect to Cursor
+
+Cursor supports MCP servers via a settings UI and a config file. Either works.
+
+### Option A — Settings UI (recommended)
+
+1. Open Cursor.
+2. Go to **Cursor Settings → MCP** (or **Settings → Features → MCP**, depending on your Cursor version).
+3. Click **+ Add new MCP server**.
+4. Fill in:
+   - **Name:** `project-memory`
+   - **Command:** `npx`
+   - **Args:** `-y @feralcaraz/project-memory-mcp`
+5. Save. Cursor will spin up the server; if you see a green dot next to the entry, it's connected.
+
+### Option B — Config file
+
+Create or edit `~/.cursor/mcp.json` and add the same block you'd use for Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "npx",
+      "args": ["-y", "@feralcaraz/project-memory-mcp"]
+    }
+  }
+}
+```
+
+Restart Cursor. Verify by opening Composer or Chat and asking it to list available tools — `project-memory` should appear.
+
+If Cursor's UI or config path has moved, the canonical reference is [Cursor's MCP docs](https://docs.cursor.com/context/model-context-protocol).
 
 ## Development
 
