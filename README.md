@@ -12,8 +12,13 @@ It speaks the [Model Context Protocol](https://modelcontextprotocol.io), so any 
 
 ## Tools exposed
 
-- **`get_project_context`** — summarize a project at a given path: name, description, detected languages, top-level structure, and current Git state.
+- **`set_active_project`** — cache a project path for the rest of the MCP session. Once set, the other tools default to it and `path` becomes optional on every call.
+- **`get_project_context`** — summarize a project: name, description, detected languages, top-level structure, and current Git state.
 - **`list_recent_changes`** — summarize recent Git activity: the last N commits (or every commit since a date) plus a "hotspots" ranking of files touched most in that range.
+- **`get_open_questions`** — extract live state from a project's `MEMORY.md` (or any file you point it at): open questions, next steps, and explicit non-goals.
+- **`get_dependency_graph`** — TypeScript/JavaScript import graph. Without `target`, summarizes the project (most-imported modules, entrypoints). With `target`, returns one file's imports and the files that import it.
+
+On any tool, `path` is optional IF you've called `set_active_project` earlier in the session. Otherwise pass it explicitly. There is no silent `cwd` fallback.
 
 More tools coming (see `ARCHITECTURE.md` for the roadmap).
 
@@ -51,9 +56,11 @@ Add an `mcpServers` entry pointing to the built server:
 }
 ```
 
-Quit Claude Desktop fully and reopen it. You should see a new server in the MCP panel, and `get_project_context` should appear in the tool list. Try:
+Quit Claude Desktop fully and reopen it. You should see a new server in the MCP panel, and five tools should appear. A good opener for any session:
 
-> Use `get_project_context` on `/absolute/path/to/any/project`.
+> Call `set_active_project` with `/absolute/path/to/my/project`, then `get_open_questions` and `get_dependency_graph`.
+
+That's ~700 tokens of full orientation before any real work begins.
 
 ## Development
 

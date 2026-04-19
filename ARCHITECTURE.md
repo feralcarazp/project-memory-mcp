@@ -25,12 +25,18 @@ Project Memory MCP is an **MCP server** — a long-running Node.js process that 
 ```
 src/
 ├── index.ts                    Entry point. Wires up the server + transport.
+├── session.ts                  Module-level singleton: active project cache.
 ├── tools/                      Each file = one MCP tool. Thin adapter:
+│   ├── set_active_project.ts     validates + caches, returns confirmation.
 │   ├── get_project_context.ts    validates input, calls context/, formats output.
-│   └── list_recent_changes.ts
+│   ├── list_recent_changes.ts
+│   ├── get_open_questions.ts
+│   └── get_dependency_graph.ts
 └── context/                    Pure domain logic — reads the filesystem/Git.
     ├── project.ts                getProjectContext(path) → ProjectContext
-    └── changes.ts                getRecentChanges(opts) → RecentChanges
+    ├── changes.ts                getRecentChanges(opts) → RecentChanges
+    ├── questions.ts              getOpenQuestions(opts) → OpenQuestions
+    └── deps.ts                   getDependencyGraph(opts) → DependencyGraph
 ```
 
 **Separation of concerns:**
@@ -49,18 +55,19 @@ We use **stdio** (`StdioServerTransport`) because that is what Claude Desktop's 
 ## Tool design principles
 
 1. **Each tool returns both `content` and, where useful, `structuredContent`.** Human-readable markdown in `text` so every client is useful; machine-readable fields for clients that parse them.
-2. **Tools take an explicit `path` argument.** The server's `process.cwd()` is wherever Claude Desktop launched it from — usually not where the user's project lives. Making `path` explicit avoids silent-wrong-answer bugs.
+2. **Tools resolve a project path in a fixed order: explicit `path` → session's active project → error.** The server's `process.cwd()` is still never consulted — Claude Desktop launches the server with its own cwd, not the user's project folder. `set_active_project` caches a validated path for the session; subsequent tools default to it. Callers can still pass `path` explicitly on any call (useful for one-off queries against a different project without disturbing the cache). See ADR-004 (original) and ADR-012 (the session-cache overlay).
 3. **Fail clearly.** If a path doesn't exist or isn't a project, raise a useful error — don't invent data.
 
 ## Planned tools (roadmap)
 
 Order is tentative; driven by dogfooding.
 
+- ✅ `set_active_project` — cache a project path for the session so the rest of the tools can be called without repeating it.
 - ✅ `get_project_context` — high-level snapshot of a project.
 - ✅ `list_recent_changes` — git log + hotspot ranking over the last N commits or since a date.
+- ✅ `get_open_questions` — reads structured `MEMORY.md` (or any file you point it at) and exposes open questions, next steps, and explicit non-goals.
+- ✅ `get_dependency_graph` — regex-based TypeScript/JavaScript import graph. Aggregate mode ranks most-imported modules and lists entrypoints; targeted mode returns a file's imports and reverse imports.
 - `summarize_file` — AST-aware summary of a source file (uses tree-sitter).
-- `get_dependency_graph` — import graph for a file or folder.
-- `get_open_questions` — reads structured `DECISIONS.md` / `MEMORY.md` and exposes unresolved items.
 - `search_project` — semantic + keyword search across code and docs.
 
 ## Data model conventions
