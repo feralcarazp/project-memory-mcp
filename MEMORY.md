@@ -4,7 +4,20 @@
 
 ## Last session
 
-**Date:** 2026-04-19 (sixth slice — npm publish)
+**Date:** 2026-04-19 (seventh slice — first external user + docs for non-devs)
+**Summary:** Fer's brother attempted the first external install. It failed, and the failure mode itself is the finding: he pasted the MCP config block into a Claude chat expecting auto-installation instead of editing `claude_desktop_config.json` manually. That's not a user error — that's a reasonable expectation in 2026 and a clear gap in our onboarding. Shipped v0.1.1 (docs-only patch) rewriting the "Connect to Claude Desktop" section as a literal step-by-step recipe for non-devs.
+
+**Done (this slice):**
+- **First external install attempt: scenario A.** Brother pasted the config JSON as a message in a Claude Desktop chat. Claude (the model) responded generically with "this looks like a Claude Desktop config, I'm running in Claude.ai web" — which was itself confused, but the root cause was that the install flow is not conversational: you have to edit a file on disk and fully relaunch the app. He never got to run a tool, so we have no usage feedback yet. Also: the "old chat information was lost" moment is the exact pain this project addresses — lived experience of the problem without recognizing it as such.
+- **README: install section rewritten for non-devs.** New warning up front — "this is NOT installed by talking to Claude." Step-by-step recipe for macOS (Cmd+Shift+G, TextEdit, Cmd+Q-not-X) and Windows. Explicit "how to verify it worked" section and a troubleshooting block for the five most likely failures (malformed JSON, didn't fully quit, missing Node/PATH, cached npx, runtime errors via MCP log). No code changes, no API changes.
+- **Version bump: 0.1.0 → 0.1.1.** Docs-only patch. Not republished to npm — `npx` users get the existing tarball; GitHub/npm website auto-render the updated README.
+
+**Insights worth keeping:**
+1. **The MCP install flow is a UX cliff for non-devs, and it's not our problem alone — it's ecosystem-wide.** Anyone who lives in conversational AI will instinctively try to install by chatting. The README is now our first line of defense; longer term this is one of the most interesting distribution problems in the space.
+2. **Claude Desktop's silent failure is brutal.** Malformed JSON = no error, just nothing shows up. Adding the jsonlint.com hint in troubleshooting is the cheapest fix I could give.
+3. **Input for tool #6 / future distribution:** the very first person outside my head that tried to install hit a wall before running a single tool. Whatever tool #6 is, "make the install step dumber" has to stay on the radar. Possibly worth shipping a one-command installer later (`npx @feralcaraz/project-memory-mcp install` that edits the config file for you — but that's a whole ADR of its own).
+
+### Previous slice (2026-04-19, sixth — npm publish)
 **Summary:** Shipped v0.1.0 to npm. The project is now `npx -y`-installable for any MCP client, worldwide. Along the way, three npm-ecosystem incidents taught us how the registry actually behaves.
 
 **Done (this slice):**
@@ -100,23 +113,27 @@ Takeaways:
 
 ## Current state
 
-- **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests + 6 commits pushed + CI green + dogfood validated + **published to npm**. Well ahead of the S1–3 target.
+- **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests + 6 commits pushed + CI green + dogfood validated + published to npm + **first external install attempt (failed at onboarding UX) + docs rewritten for non-devs**. Well ahead of the S1–3 target on features, starting to feel the distribution edge.
 - **Tests:** 46/46 passing locally. CI green on the matrix (Node 20 & 22 × ubuntu/macos).
-- **Repo:** `feralcarazp/project-memory-mcp` public on GitHub. Tagged `v0.1.0` matching the published npm version.
-- **npm:** `@feralcaraz/project-memory-mcp@0.1.0` live at `https://www.npmjs.com/package/@feralcaraz/project-memory-mcp`. Installable as `npx -y @feralcaraz/project-memory-mcp` from any machine.
+- **Repo:** `feralcarazp/project-memory-mcp` public on GitHub. Tagged `v0.1.0` for the npm release, `v0.1.1` for the docs patch.
+- **npm:** `@feralcaraz/project-memory-mcp@0.1.0` live at `https://www.npmjs.com/package/@feralcaraz/project-memory-mcp`. `v0.1.1` is a docs-only patch — not republished; `npx` still fetches the `0.1.0` tarball.
 - **On Fer's Mac:** all 5 tools verified live via dogfood in a fresh Claude Desktop session.
+- **External users:** 1 install attempt (hermano), 0 successful installs, 0 usage feedback. Blocker is onboarding, not the server.
 - **Ergonomic note:** session opener is `set_active_project(path)` → `get_open_questions()` → `get_dependency_graph()` — 3 calls, ~750 tokens total.
 - **Process discovery:** update `MEMORY.md` at session **close**, not session start.
 
 ## Next steps (suggested, in order)
 
-1. **Tool #6 — strategic decision.** The distribution story is done, so next is real feature work. Two candidates, both meaningful scope jumps:
-   - `summarize_file` (tree-sitter): AST-aware summary of a single file. Pays for itself if summary stays under ~200 tokens/file. Would be the first tool that needs a non-regex parser. Scope: add `tree-sitter` + language grammars, build per-language summarizer, wire adapter, write tests. 2–3 sessions.
-   - `search_project` (semantic + keyword across code and docs): needs an indexing story — where the index lives, when it gets built, how it gets invalidated. Bigger than it sounds. 3–5 sessions.
-   - Lean `summarize_file` first: smaller surface, more obviously useful at small context budgets, validates tree-sitter as an infrastructure choice before betting on a bigger indexer.
-2. **Soft launch.** With v0.1.0 shipped, worth quietly telling a few dogfooders (maybe post the `npx` line + config block in a small Discord/Twitter thread) and watching what breaks first on other people's projects. No marketing push — we want real bug reports, not stars.
-3. **Housekeeping, low priority:**
-   - Bump `actions/checkout` and `actions/setup-node` to `@v5` whenever GitHub ships it (current `@v4` throws Node 20 deprecation warnings in CI — cosmetic).
+1. **Unblock hermano's install and get the first real feedback.** Give him the v0.1.1 README, walk him through it once if needed, and capture: which tool he called first, what he expected vs. what he got, where he got confused. This is the single highest-leverage input for tool #6 and for distribution copy. Everything else on this list matters less until we have one successful external run.
+2. **Outreach round: 5–10 friends who use Claude.** Copy the 1-a-1 template from the 90-day plan PDF. Priority is conversation and feedback, not announcement. The installer UX is the likeliest thing to break; treat each install as a mini user test.
+3. **Tool #6 — strategic decision, informed by #1 and #2.** Two candidates, both meaningful scope jumps:
+   - `summarize_file` (tree-sitter): AST-aware summary of a single file. Pays for itself if summary stays under ~200 tokens/file. Would be the first tool that needs a non-regex parser. 2–3 sessions.
+   - `search_project` (semantic + keyword across code and docs): needs an indexing story. 3–5 sessions.
+   - Leaning `summarize_file` first. But wait for user feedback before locking in — if hermano or the friends ask for something specific (e.g. "I wish it told me where to start"), that reframes the priority.
+4. **Consider a one-command installer (ADR-worthy).** Something like `npx @feralcaraz/project-memory-mcp install` that edits `claude_desktop_config.json` for the user with a proper JSON-merge (respect existing servers), prints the path it wrote to, and tells them to quit-and-relaunch. Would collapse the README recipe into one terminal command. Not today; think about it after 3–5 more installs show whether the README fix is enough.
+5. **Soft launch — deliberate, after #1 and #2.** Show HN / small Twitter thread with the `npx` line + config block. Goal: real bug reports, not stars.
+6. **Housekeeping, low priority:**
+   - Bump `actions/checkout` and `actions/setup-node` to `@v5` whenever GitHub ships it.
    - Consider moving the token benchmark into CI as a regression guard (still leaning no).
    - Regenerate the npm token before July expiration, narrower scope this time (`@feralcaraz/project-memory-mcp` only, not all packages).
 
@@ -128,6 +145,7 @@ Takeaways:
 - Should the active-project cache persist across server restarts (e.g. `~/.config/project-memory-mcp/session.json`)? ADR-012 said no on day one — revisit after a few weeks of real use if people keep re-setting the same project.
 - Tool #6 direction — `summarize_file` (tree-sitter) vs. `search_project` (indexing). Both are big scope jumps; leaning `summarize_file` first.
 - Should we drop the `@feralcaraz` scope for a "neutral" scope (e.g. a project org on npm) before the soft launch, so future contributors don't feel the name is personal property? Defer until we have contributors.
+- Should we ship a `npx @feralcaraz/project-memory-mcp install` subcommand that edits `claude_desktop_config.json` on the user's behalf (with safe JSON-merge)? First external install failed at this exact step — a one-command installer would make the README mostly irrelevant for the happy path. Defer until 3–5 more installs prove the README fix isn't enough.
 
 ## Things we are NOT doing yet
 

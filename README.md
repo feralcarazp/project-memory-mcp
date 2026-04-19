@@ -48,42 +48,65 @@ npm run build
 
 ## Connect to Claude Desktop
 
-Edit your Claude Desktop config file:
+> ⚠️ **Important — this is not installed by talking to Claude.** You don't paste the config into a chat. You edit a file on your computer and then restart the Claude Desktop app. If you paste the config block into a Claude conversation, Claude may respond politely but **nothing will get installed**. Follow the steps below.
+>
+> This guide is for the **Claude Desktop app** (the one you download and install). It does **not** work with claude.ai in a web browser — browser Claude only supports remote URL-based MCP servers, and this one runs locally.
 
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+### Step-by-step for macOS
 
-Add an `mcpServers` entry. The simplest version uses `npx`:
+1. **Install Node.js 20 or newer** if you haven't already. Download the LTS installer from [nodejs.org](https://nodejs.org). You can confirm it worked by opening the Terminal app and running `node --version` — you should see something like `v20.x` or higher.
+2. **Install the Claude Desktop app** from [claude.ai/download](https://claude.ai/download) if you don't have it yet. Open it once so it creates its config folder.
+3. **Open the Claude config file.** In Finder, press `Cmd + Shift + G` to open the "Go to Folder" prompt. Paste this exact path and press Enter:
 
-```json
-{
-  "mcpServers": {
-    "project-memory": {
-      "command": "npx",
-      "args": ["-y", "@feralcaraz/project-memory-mcp"]
-    }
-  }
-}
-```
+   ```
+   ~/Library/Application Support/Claude/
+   ```
 
-Or, if you built from source, point to the local `dist/index.js`:
+   You should see a file named `claude_desktop_config.json`. If it's not there, create an empty file with that exact name (including the `.json` extension).
 
-```json
-{
-  "mcpServers": {
-    "project-memory": {
-      "command": "node",
-      "args": ["/absolute/path/to/project-memory-mcp/dist/index.js"]
-    }
-  }
-}
-```
+4. **Open `claude_desktop_config.json` with a plain-text editor.** Right-click the file → Open With → TextEdit (or VS Code, Sublime, etc. — anything that edits plain text). Do **not** use Word, Pages, or Notes — those add invisible formatting and break the file.
+5. **Paste the config below into the file.** If the file is empty, paste this exactly as shown. If the file already has content (an `mcpServers` block from another server), add the `"project-memory": { … }` entry inside it, separated by a comma.
 
-Quit Claude Desktop fully and reopen it. You should see a new server in the MCP panel, and five tools should appear. A good opener for any session:
+   ```json
+   {
+     "mcpServers": {
+       "project-memory": {
+         "command": "npx",
+         "args": ["-y", "@feralcaraz/project-memory-mcp"]
+       }
+     }
+   }
+   ```
+
+6. **Save the file.** `Cmd + S`. Make sure the extension is still `.json` — TextEdit sometimes tries to append `.txt`. If it asks whether to save as rich text or plain text, choose plain text.
+7. **Fully quit Claude Desktop.** Click the Claude icon in the menu bar → Quit, or press `Cmd + Q` inside the app. The red close button (top-left) is NOT enough — the app keeps running in the background.
+8. **Reopen Claude Desktop.** It should now load the config on startup. If you see a small hammer/tool icon in the chat input area, click it — you should see `project-memory` listed with 5 tools. That means it worked.
+
+### Step-by-step for Windows
+
+1. Install Node.js 20 or newer from [nodejs.org](https://nodejs.org).
+2. Install the Claude Desktop app from [claude.ai/download](https://claude.ai/download) and open it at least once.
+3. Open File Explorer, paste `%APPDATA%\Claude\` into the address bar, and press Enter.
+4. Open `claude_desktop_config.json` with Notepad (not Word). If the file doesn't exist, create it.
+5. Paste the same JSON block as above.
+6. Save the file. Confirm it's saved as `.json`, not `.json.txt`.
+7. Right-click the Claude icon in the system tray → Quit. Wait a few seconds. Relaunch.
+
+### Verify it worked
+
+Open a new chat in Claude Desktop and try:
 
 > Call `set_active_project` with `/absolute/path/to/my/project`, then `get_open_questions` and `get_dependency_graph`.
 
-That's ~700 tokens of full orientation before any real work begins.
+Replace the path with a real folder on your machine. If the three calls run and return markdown, you're done — that's ~700 tokens of full project orientation before any real work begins.
+
+### Troubleshooting
+
+- **The hammer icon doesn't show up / nothing happens.** The config file is probably malformed. Copy its full contents into [jsonlint.com](https://jsonlint.com) — it will pinpoint the typo. Most common cause: a missing comma when adding `project-memory` next to an existing MCP server.
+- **Claude says it doesn't see a `project-memory` server.** You didn't fully quit the app. `Cmd + Q` on Mac, system-tray Quit on Windows. Restarting via the red close button is not enough.
+- **`spawn npx ENOENT` or similar error.** Node isn't installed or isn't in your `PATH`. Run `which npx` (Mac) or `where npx` (Windows) in a terminal. If it prints nothing, reinstall Node from nodejs.org.
+- **You see an old version even after updating.** `npx` caches packages. Force a refresh: in a terminal, run `npx clear-npx-cache` or delete the `~/.npm/_npx/` folder, then restart Claude Desktop.
+- **It works, then stops working later.** Check Claude Desktop's MCP log: View → Developer → Open MCP Log (or in `~/Library/Logs/Claude/mcp*.log` on Mac). Errors show up there when a tool call fails.
 
 ## Development
 
