@@ -2,7 +2,7 @@
 
 > A neutral context layer for AI coding tools. Exposes structured, curated project context to any MCP-compatible client (Claude Desktop, Cursor, Claude Code, etc.).
 
-**Status:** early development. Not yet published to npm.
+**Status:** early development. Published to npm as [`@feralcaraz/project-memory-mcp`](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp).
 
 ## Why
 
@@ -27,10 +27,20 @@ More tools coming (see `ARCHITECTURE.md` for the roadmap).
 - Node.js 20 or newer
 - A project on your local filesystem (Git repo optional but recommended)
 
-## Install & run from source
+## Install
+
+The simplest way to run the server is via `npx` — no clone, no build, no install steps. The MCP client (Claude Desktop, Cursor, etc.) will fetch and run it on demand.
 
 ```bash
-git clone <this-repo>
+npx -y @feralcaraz/project-memory-mcp
+```
+
+That command starts the MCP server over stdio. You normally don't run it directly — your MCP client does. See the next section for how to wire it into Claude Desktop.
+
+If you'd rather build from source (for development or to pin a specific commit):
+
+```bash
+git clone https://github.com/feralcarazp/project-memory-mcp.git
 cd project-memory-mcp
 npm install
 npm run build
@@ -43,7 +53,20 @@ Edit your Claude Desktop config file:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-Add an `mcpServers` entry pointing to the built server:
+Add an `mcpServers` entry. The simplest version uses `npx`:
+
+```json
+{
+  "mcpServers": {
+    "project-memory": {
+      "command": "npx",
+      "args": ["-y", "@feralcaraz/project-memory-mcp"]
+    }
+  }
+}
+```
+
+Or, if you built from source, point to the local `dist/index.js`:
 
 ```json
 {

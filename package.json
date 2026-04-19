@@ -1,11 +1,14 @@
 {
-  "name": "project-memory-mcp",
-  "version": "0.0.1",
+  "name": "@feralcaraz/project-memory-mcp",
+  "version": "0.1.0",
   "description": "A neutral context layer for AI coding tools. MCP server that exposes structured, curated project context to any MCP-compatible client.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "project-memory-mcp": "dist/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "dist",
