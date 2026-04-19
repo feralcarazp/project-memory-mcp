@@ -60,11 +60,31 @@ export async function getRecentChanges(
     ? { type: "since", value: opts.since }
     : { type: "count", value: Math.min(opts.limit ?? DEFAULT_LIMIT, MAX_LIMIT) };
 
+  // A freshly-init'd repo has no commits yet. `git log` in that state exits
+  // with "your current branch does not have any commits yet". That's a
+  // valid state — treat it as "zero commits" rather than letting the error
+  // bubble up.
+  if (!(await hasAnyCommits(git))) {
+    return { range, commits: [], hotspots: [] };
+  }
+
   // Pull the commit log. `--name-only` gives us file lists per commit, which
   // we need for hotspot computation. `simple-git`'s `raw()` gives us tighter
   // control over format than the higher-level `log()`.
+  //
+  // Flags worth noting:
+  // - `-c core.quotePath=off` — disables git's default behavior of wrapping
+  //   non-ASCII paths in quotes and octal-escaping the bytes. Without it,
+  //   `café.ts` comes back as `"caf\303\251.ts"`, which breaks any consumer
+  //   that treats hotspot paths as real filesystem paths.
+  // - `--no-merges` — merge commits "touch" every file they bring in, which
+  //   double-counts changes in the hotspot ranking without adding signal.
+  //   The real work happened in the merged-in commits; we already see those.
   const args = [
+    "-c",
+    "core.quotePath=off",
     "log",
+    "--no-merges",
     "--name-only",
     "--pretty=format:__COMMIT__%n%H%n%aI%n%an%n%s",
   ];
@@ -101,6 +121,20 @@ export async function getRecentChanges(
     })),
     hotspots,
   };
+}
+
+/**
+ * Does this repo have at least one commit reachable from any ref?
+ *
+ * `rev-parse HEAD` would work, but simple-git's error detection treats the
+ * non-zero exit on an unborn branch as an unrecoverable error, which we
+ * can't cleanly suppress. `rev-list --all -n 1` instead prints a single
+ * commit hash when any commit exists and prints nothing (exit 0) on an
+ * empty repo — no error path to work around.
+ */
+async function hasAnyCommits(git: SimpleGit): Promise<boolean> {
+  const out = await git.raw(["rev-list", "--all", "-n", "1"]);
+  return out.trim().length > 0;
 }
 
 interface ParsedCommit {

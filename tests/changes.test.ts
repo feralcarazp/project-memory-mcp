@@ -100,4 +100,107 @@ describe("getRecentChanges", () => {
     expect(res.hotspots).toHaveLength(1);
     expect(res.hotspots[0].path).toBe("a.ts");
   });
+
+  // --- Regression tests for the three bugs found on 2026-04-18 ---------------
+
+  it("returns an empty result on a repo with zero commits", async () => {
+    // Regression: `git log` on a freshly-init'd repo exits non-zero because
+    // HEAD doesn't point at anything yet. That shouldn't bubble up as an
+    // error — an empty repo is a valid state, just with nothing to show.
+    const empty = await mkdtemp(join(tmpdir(), "pm-mcp-empty-"));
+    try {
+      const emptyGit = simpleGit({ baseDir: empty });
+      await emptyGit.init();
+      await emptyGit.addConfig("user.email", "test@example.com");
+      await emptyGit.addConfig("user.name", "Test User");
+
+      const res = await getRecentChanges({ root: empty, limit: 10 });
+      expect(res.commits).toEqual([]);
+      expect(res.hotspots).toEqual([]);
+      expect(res.range).toEqual({ type: "count", value: 10 });
+    } finally {
+      await rm(empty, { recursive: true, force: true });
+    }
+  });
+
+  it("excludes merge commits from the log and from hotspots", async () => {
+    // Regression: without `--no-merges`, a merge commit double-counts every
+    // file it brings in, polluting the hotspot ranking for no useful signal.
+    const mergeTmp = await mkdtemp(join(tmpdir(), "pm-mcp-merge-"));
+    try {
+      const g = simpleGit({ baseDir: mergeTmp });
+      await g.init();
+      // Force a stable default branch name so the test doesn't depend on
+      // the user's global `init.defaultBranch` setting.
+      await g.raw(["symbolic-ref", "HEAD", "refs/heads/main"]);
+      await g.addConfig("user.email", "test@example.com");
+      await g.addConfig("user.name", "Test User");
+
+      // Baseline commit on main.
+      await writeFile(join(mergeTmp, "base.ts"), "1");
+      await g.add(".");
+      await g.commit("chore: base");
+
+      // Diverge: feature branch touches feature.ts.
+      await g.checkoutLocalBranch("feature");
+      await writeFile(join(mergeTmp, "feature.ts"), "1");
+      await g.add(".");
+      await g.commit("feat: feature");
+
+      // Meanwhile, main touches main.ts.
+      await g.checkout("main");
+      await writeFile(join(mergeTmp, "main.ts"), "1");
+      await g.add(".");
+      await g.commit("feat: main");
+
+      // Force a real merge commit (not fast-forward).
+      await g.merge(["--no-ff", "feature", "-m", "merge: feature into main"]);
+
+      const res = await getRecentChanges({ root: mergeTmp, limit: 10 });
+
+      // Merge subject should not appear in the commit list.
+      const subjects = res.commits.map((c) => c.message);
+      expect(subjects.some((s) => s.startsWith("merge:"))).toBe(false);
+
+      // Three real commits: base, feature, main.
+      expect(res.commits).toHaveLength(3);
+
+      // Each real file was touched once by a real commit. If the merge
+      // commit had leaked through, feature.ts or main.ts would show up
+      // with `changes: 2`.
+      for (const h of res.hotspots) {
+        expect(h.changes).toBe(1);
+      }
+    } finally {
+      await rm(mergeTmp, { recursive: true, force: true });
+    }
+  });
+
+  it("returns non-ASCII filenames verbatim (no octal-escape quoting)", async () => {
+    // Regression: git's default `core.quotePath=true` wraps non-ASCII paths
+    // in quotes and octal-escapes the bytes, e.g. `café.ts` becomes
+    // `"caf\303\251.ts"`. That breaks any downstream consumer that treats
+    // hotspot paths as real paths. We pass `-c core.quotePath=off` to fix it.
+    const utf8Tmp = await mkdtemp(join(tmpdir(), "pm-mcp-utf8-"));
+    try {
+      const g = simpleGit({ baseDir: utf8Tmp });
+      await g.init();
+      await g.addConfig("user.email", "test@example.com");
+      await g.addConfig("user.name", "Test User");
+
+      const unicodeName = "café.ts";
+      await writeFile(join(utf8Tmp, unicodeName), "1");
+      await g.add(".");
+      await g.commit("feat: unicode filename");
+
+      const res = await getRecentChanges({ root: utf8Tmp, limit: 10 });
+      expect(res.hotspots).toHaveLength(1);
+      expect(res.hotspots[0].path).toBe(unicodeName);
+      // Explicitly: no quoting artifacts.
+      expect(res.hotspots[0].path).not.toMatch(/^"/);
+      expect(res.hotspots[0].path).not.toMatch(/\\\d{3}/);
+    } finally {
+      await rm(utf8Tmp, { recursive: true, force: true });
+    }
+  });
 });
