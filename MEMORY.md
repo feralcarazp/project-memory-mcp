@@ -4,7 +4,19 @@
 
 ## Last session
 
-**Date:** 2026-04-19 (fourth slice)
+**Date:** 2026-04-19 (fifth slice)
+**Summary:** Closed the weekly loop. Five clean commits packaged via script, pushed to GitHub, CI green on the first matrix run, and the opener dogfood in a live Claude Desktop session validated the project's whole premise.
+
+**Done (this slice):**
+- **Commits shipped.** The five-commit plan ran cleanly through `scripts/commit-session.sh` after resolving two small incidents: a stale `.git/index.lock` on Fer's Mac (same class of issue the sandbox had), and a `@rollup/rollup-darwin-arm64` missing-optional-dep caused by the sandbox writing a Linux-side `package-lock.json`. Fix was the canonical `rm -rf node_modules package-lock.json && npm install`. Lesson: when the dev-side sandbox isn't the same OS as the user's machine, regenerate the lockfile locally before the first commit.
+- **Push + CI green on first run.** `feralcarazp/project-memory-mcp` public on GitHub. CI matrix (Node 20 & 22 × ubuntu-latest & macos-latest) passed in 22s on commit `a14f54e`. Four deprecation warnings about `actions/checkout@v4` and `actions/setup-node@v4` internally running on Node 20 — cosmetic, unrelated to our test matrix, bump to `@v5` whenever GitHub ships it.
+- **Opener dogfood: premise validated.** Fresh Claude Desktop session, three tool calls (`set_active_project` → `get_open_questions` → `get_dependency_graph`), ~750 tokens total. Claude identified stack, file count (18), ADR count (up to 012), last commit hash (`a14f54e`), all five open questions, and proposed a coherent next step. Zero re-explanation typed by Fer. The "open a new session cold" scenario now works.
+- **Loop-closing insight (this very update is the example):** the tool is only as fresh as the file it reads. Claude's "next steps" suggestion referenced operational work (sync, commits, push) that was already done — because MEMORY.md hadn't been updated to reflect post-push state. Fix: update MEMORY.md at session close, not session start, from now on. Updating it at the start means the previous session's work has already been "lost" for one run.
+
+**Cleanup:** removed `scripts/commit-session.sh` (its job is done and keeping it in the repo confuses future readers).
+
+### Previous slice (2026-04-19, fourth)
+
 **Summary:** Shipped tool #5 — `set_active_project`. Fulfills ADR-004's deferred "Future direction" clause. `path` is now optional on every tool; the fallback order is explicit `path` → cached active project → clear error. No `cwd` fallback, ever.
 
 **Done (this slice):**
@@ -73,31 +85,34 @@ Takeaways:
 
 ## Current state
 
-- **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests. Well ahead of the S1–3 target.
-- **Tests:** 46/46 passing locally. CI hasn't run against a real GitHub remote yet — will validate on first push.
-- **On Fer's Mac:** tool #1 verified live. Tools #2–#5 all built but still need a local rebuild + Claude Desktop restart.
-- **Git init on Fer's Mac:** still pending (sandbox couldn't commit on Claude's side — Fer does it locally, see SETUP.md step 4).
-- **Ergonomic note:** the session now has a proper opener. `set_active_project(path)` → `get_open_questions()` → `get_dependency_graph()` is 3 calls, ~750 tokens total, zero repeated path arguments.
+- **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests + 5 commits pushed + CI green + dogfood validated. Well ahead of the S1–3 target.
+- **Tests:** 46/46 passing locally. CI green on first matrix run (Node 20 & 22 × ubuntu/macos, 22s on `a14f54e`).
+- **Repo:** `feralcarazp/project-memory-mcp` public on GitHub.
+- **On Fer's Mac:** all 5 tools verified live via dogfood in a fresh Claude Desktop session — opener returned project name, stack, file count, ADR count up to 012, last commit hash, and all five open questions in ~750 tokens.
+- **Ergonomic note:** the session now has a proper opener. `set_active_project(path)` → `get_open_questions()` → `get_dependency_graph()` is 3 calls, ~750 tokens total, zero repeated path arguments. Validated end-to-end.
+- **Process discovery:** update `MEMORY.md` at session **close**, not session start. Updating it at the start means the previous session's work has already been "lost" for one reading.
 
 ## Next steps (suggested, in order)
 
-1. **Fer:** sync, `npm install`, `npm run build`, restart Claude Desktop. Then open next session with `set_active_project(path)` → `get_open_questions()` → `get_dependency_graph()` — that's three calls, zero repeated paths, ~750 tokens of full orientation before any work starts. Real test of the premise.
-2. Commit. Suggested grouping, each green under CI:
-   - (a) `fix: harden getRecentChanges against empty repos, merges, and quoted paths` (ADR-009)
-   - (b) `chore(ci): add GitHub Actions workflow`
-   - (c) `chore: add token benchmark harness`
-   - (d) `feat: add get_open_questions tool` (ADR-010)
-   - (e) `feat: add get_dependency_graph tool` (ADR-011)
-   - (f) `feat: add set_active_project tool + session cache` (ADR-012)
-3. Publish the repo publicly on GitHub so CI actually runs.
-4. Tool #6 — best candidates now:
-   - `summarize_file`: the tree-sitter one. Would be our biggest scope jump yet. Good chance it pays for itself when the summary is < 200 tokens per file.
-   - `search_project`: semantic + keyword search across code and docs. Needs an indexing story; bigger than it sounds.
-   - Either way, the next tool is a meaningful jump in scope — no easy wins left in the four-tools-that-are-just-parsing-structured-text category.
+1. **npm publish — make `npx -y project-memory-mcp` work.** Concrete substeps:
+   - Decide final package name. `project-memory-mcp` is still the leading candidate — descriptive, matches repo. Alternatives considered and rejected: `mcp-project-memory` (just a suffix swap), `projmem-mcp` (cryptic), `@feralcarazp/project-memory-mcp` (scoped; adds friction to `npx` usage).
+   - Add `"bin": { "project-memory-mcp": "dist/index.js" }` to `package.json` so `npx` has an entrypoint. First line of `dist/index.js` already has the shebang from the TS source.
+   - Add `"files": ["dist", "README.md", "LICENSE"]` so we don't publish `tests/`, `scripts/`, `.github/`, etc.
+   - Set `"engines": { "node": ">=20" }` explicitly.
+   - `npm login` (create account if needed), then `npm publish --dry-run` to review the tarball contents, then `npm publish`.
+   - Update `README.md` "Install" section from the source-clone flow to the `npx -y project-memory-mcp` flow (keep source-clone as the dev option).
+   - Cut a git tag (`v0.1.0`) matching the published version.
+2. Tool #6 — strategic decision, not a next-sprint task:
+   - `summarize_file` (tree-sitter): biggest scope jump so far. Pays for itself if summary stays under ~200 tokens/file.
+   - `search_project` (semantic + keyword across code and docs): needs an indexing story; bigger than it sounds.
+   - Either way, no easy wins left in the "just parse structured text" category.
+3. Housekeeping once #1 lands:
+   - Bump `actions/checkout` and `actions/setup-node` to `@v5` whenever GitHub ships it — current `@v4` is throwing Node 20 deprecation warnings in CI (cosmetic).
+   - Consider moving the token benchmark into CI as a regression guard (still leaning no).
 
 ## Open questions
 
-- Naming for npm publish: `project-memory-mcp` is descriptive but long. Defer until soft launch.
+- Final npm package name. Leaning `project-memory-mcp` (unscoped) for the soft launch — resolve as part of the next step, not a future punt.
 - Should `get_open_questions` also parse `DECISIONS.md`'s `**Revisit when:**` markers? Would need a separate parser (ADR-010 punted). Wait until we have a concrete case.
 - Should `get_dependency_graph` ever resolve `tsconfig.json` `paths` aliases? ADR-011 says no for v1. Revisit when a dogfooder bumps into it.
 - Should the benchmark be part of CI as a regression guard on token counts? Still leaning local-only until we have more data points.
