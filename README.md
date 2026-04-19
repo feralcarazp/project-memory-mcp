@@ -5,7 +5,6 @@
 [![CI](https://github.com/feralcarazp/project-memory-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/feralcarazp/project-memory-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/npm/l/@feralcaraz/project-memory-mcp.svg)](LICENSE)
 
-![project-memory-mcp demo](./docs/demo.gif)
 
 > A neutral context layer for AI coding tools. Exposes structured, curated project context to any MCP-compatible client (Claude Desktop, Cursor, Claude Code, etc.).
 
