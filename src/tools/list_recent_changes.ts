@@ -1,6 +1,47 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getRecentChanges } from "../context/changes.js";
+import { getRecentChanges, type RecentChanges } from "../context/changes.js";
+import { resolveTargetPath } from "../session.js";
+
+/**
+ * Render a RecentChanges result as the markdown we return to MCP clients.
+ *
+ * Exported so tools other than the MCP adapter (for example, the token
+ * benchmark) can measure the exact text the client receives.
+ */
+export function formatRecentChanges(result: RecentChanges): string {
+  const lines: string[] = [];
+  const header =
+    result.range.type === "since"
+      ? `# Changes since ${result.range.value}`
+      : `# Last ${result.range.value} commits`;
+  lines.push(header);
+  lines.push("");
+
+  if (result.commits.length === 0) {
+    lines.push("_No commits in range._");
+    return lines.join("\n");
+  }
+
+  lines.push(`**${result.commits.length} commit(s):**`);
+  for (const c of result.commits) {
+    lines.push(
+      `- \`${c.hash}\` ${c.date.slice(0, 10)} · ${c.author}: ${c.message}  _(${c.filesChanged} file${c.filesChanged === 1 ? "" : "s"})_`,
+    );
+  }
+
+  if (result.hotspots.length > 0) {
+    lines.push("");
+    lines.push("## Hotspots (files touched most)");
+    for (const h of result.hotspots) {
+      lines.push(
+        `- ${h.path}  _(${h.changes} change${h.changes === 1 ? "" : "s"})_`,
+      );
+    }
+  }
+
+  return lines.join("\n");
+}
 
 /**
  * Registers `list_recent_changes` — summary of recent Git activity.
@@ -22,7 +63,10 @@ export function registerListRecentChanges(server: McpServer): void {
         path: z
           .string()
           .min(1)
-          .describe("Absolute path to the Git project root."),
+          .optional()
+          .describe(
+            "Absolute path to the Git project root. Optional: if omitted, falls back to the active project set via `set_active_project`.",
+          ),
         limit: z
           .number()
           .int()
@@ -41,39 +85,11 @@ export function registerListRecentChanges(server: McpServer): void {
       },
     },
     async ({ path, limit, since }) => {
-      const result = await getRecentChanges({ root: path, limit, since });
-
-      const lines: string[] = [];
-      const header =
-        result.range.type === "since"
-          ? `# Changes since ${result.range.value}`
-          : `# Last ${result.range.value} commits`;
-      lines.push(header);
-      lines.push("");
-
-      if (result.commits.length === 0) {
-        lines.push("_No commits in range._");
-        return { content: [{ type: "text", text: lines.join("\n") }] };
-      }
-
-      lines.push(`**${result.commits.length} commit(s):**`);
-      for (const c of result.commits) {
-        lines.push(
-          `- \`${c.hash}\` ${c.date.slice(0, 10)} · ${c.author}: ${c.message}  _(${c.filesChanged} file${c.filesChanged === 1 ? "" : "s"})_`,
-        );
-      }
-
-      if (result.hotspots.length > 0) {
-        lines.push("");
-        lines.push("## Hotspots (files touched most)");
-        for (const h of result.hotspots) {
-          lines.push(
-            `- ${h.path}  _(${h.changes} change${h.changes === 1 ? "" : "s"})_`,
-          );
-        }
-      }
-
-      return { content: [{ type: "text", text: lines.join("\n") }] };
+      const root = resolveTargetPath(path);
+      const result = await getRecentChanges({ root, limit, since });
+      return {
+        content: [{ type: "text", text: formatRecentChanges(result) }],
+      };
     },
   );
 }
