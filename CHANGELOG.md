@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-04-20
+
+### Fixed
+- Executable bit missing on `dist/index.js` in the published tarball — caused `npx @feralcaraz/project-memory-mcp` to fail with `sh: project-memory-mcp: command not found`. Added a `postbuild` step (`chmod +x dist/index.js`) so the bit is always set after `tsc`. Local `node dist/index.js` already worked; only the npx bin shim was affected.
+
 ## [0.2.0] - 2026-04-20
 
 Theme: the brain that writes back + one-command install.
@@ -36,6 +41,7 @@ Theme: the brain that writes back + one-command install.
 - Initial public release. Five read-side tools: `set_active_project`, `get_project_context`, `list_recent_changes`, `get_open_questions`, `get_dependency_graph`.
 - MCP server over stdio, published as `@feralcaraz/project-memory-mcp` on npm.
 
+[0.2.1]: https://github.com/feralcarazp/project-memory-mcp/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/feralcarazp/project-memory-mcp/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/feralcarazp/project-memory-mcp/releases/tag/v0.1.2
 [0.1.0]: https://github.com/feralcarazp/project-memory-mcp/releases/tag/v0.1.0
