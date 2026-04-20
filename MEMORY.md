@@ -158,6 +158,8 @@ Takeaways:
    - Consider moving the token benchmark into CI as a regression guard (still leaning no).
    - Regenerate the npm token before July expiration, narrower scope this time (`@feralcaraz/project-memory-mcp` only, not all packages).
 
+
+- [2026-04-20] v0.2.0 branch: `append_to_memory` implementado y tests verdes. Falta el `npx install` subcomando. Smoke test live pospuesto hasta que ambas features estén (sesión que viene). Observación cross-platform: line endings normalizan a LF al escribir — puede afectar usuarios Windows que editen MEMORY.md en Notepad. Flaggear para v0.3.
 ## Open questions
 
 - Should `get_open_questions` also parse `DECISIONS.md`'s `**Revisit when:**` markers? Would need a separate parser (ADR-010 punted). Wait until we have a concrete case.
