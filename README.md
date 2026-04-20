@@ -8,7 +8,7 @@
 
 > **A brain for your AI coding tools — one that doesn't forget.** Project Memory gives Claude, Cursor, and Claude Code a shared, always-fresh view of your codebase, cutting token usage by up to **88%**. [See the benchmark →](./BENCHMARKS.md)
 
-**Status:** v0.1.2 on npm — early, actively used and updated. Published as [`@feralcaraz/project-memory-mcp`](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp).
+**Status:** v0.2.0 on npm — now with one-command install and a native write tool. Published as [`@feralcaraz/project-memory-mcp`](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp).
 
 ## Why
 
@@ -23,6 +23,7 @@ It speaks the [Model Context Protocol](https://modelcontextprotocol.io), so any 
 - **`list_recent_changes`** — summarize recent Git activity: the last N commits (or every commit since a date) plus a "hotspots" ranking of files touched most in that range.
 - **`get_open_questions`** — extract live state from a project's `MEMORY.md` (or any file you point it at): open questions, next steps, and explicit non-goals.
 - **`get_dependency_graph`** — TypeScript/JavaScript import graph. Without `target`, summarizes the project (most-imported modules, entrypoints). With `target`, returns one file's imports and the files that import it.
+- **`append_to_memory`** — append markdown content to a curated section of `MEMORY.md` (open questions, next steps, session notes, decisions). Closed enum for sections; load-bearing ones must pre-exist; atomic write via tmp + rename. *(new in v0.2.0)*
 
 On any tool, `path` is optional IF you've called `set_active_project` earlier in the session. Otherwise pass it explicitly. There is no silent `cwd` fallback.
 
@@ -35,13 +36,7 @@ More tools coming (see `ARCHITECTURE.md` for the roadmap).
 
 ## Install
 
-The simplest way to run the server is via `npx` — no clone, no build, no install steps. The MCP client (Claude Desktop, Cursor, etc.) will fetch and run it on demand.
-
-```bash
-npx -y @feralcaraz/project-memory-mcp
-```
-
-That command starts the MCP server over stdio. You normally don't run it directly — your MCP client does. See the next section for how to wire it into Claude Desktop.
+No install step needed for normal use. Your MCP client (Claude Desktop, Cursor, etc.) fetches and runs the server on demand via `npx`. The next section shows how to wire it in.
 
 If you'd rather build from source (for development or to pin a specific commit):
 
@@ -58,7 +53,27 @@ npm run build
 >
 > This guide is for the **Claude Desktop app** (the one you download and install). It does **not** work with claude.ai in a web browser — browser Claude only supports remote URL-based MCP servers, and this one runs locally.
 
-### Step-by-step for macOS
+### One-command install (recommended)
+
+```bash
+npx @feralcaraz/project-memory-mcp install
+```
+
+This edits `claude_desktop_config.json` for you — adding the `project-memory` entry under `mcpServers` and preserving anything else already in the file. A timestamped backup is written next to the config before any changes.
+
+To remove it later:
+
+```bash
+npx @feralcaraz/project-memory-mcp uninstall
+```
+
+After install or uninstall, fully quit and reopen Claude Desktop to pick up the change.
+
+### Manual install (fallback)
+
+If you'd rather edit the config file by hand, here are the full step-by-step recipes for each OS.
+
+#### macOS
 
 1. **Install Node.js 20 or newer** if you haven't already. Download the LTS installer from [nodejs.org](https://nodejs.org). You can confirm it worked by opening the Terminal app and running `node --version` — you should see something like `v20.x` or higher.
 2. **Install the Claude Desktop app** from [claude.ai/download](https://claude.ai/download) if you don't have it yet. Open it once so it creates its config folder.
@@ -86,9 +101,9 @@ npm run build
 
 6. **Save the file.** `Cmd + S`. Make sure the extension is still `.json` — TextEdit sometimes tries to append `.txt`. If it asks whether to save as rich text or plain text, choose plain text.
 7. **Fully quit Claude Desktop.** Click the Claude icon in the menu bar → Quit, or press `Cmd + Q` inside the app. The red close button (top-left) is NOT enough — the app keeps running in the background.
-8. **Reopen Claude Desktop.** It should now load the config on startup. If you see a small hammer/tool icon in the chat input area, click it — you should see `project-memory` listed with 5 tools. That means it worked.
+8. **Reopen Claude Desktop.** It should now load the config on startup. If you see a small hammer/tool icon in the chat input area, click it — you should see `project-memory` listed with 6 tools. That means it worked.
 
-### Step-by-step for Windows
+#### Windows
 
 1. Install Node.js 20 or newer from [nodejs.org](https://nodejs.org).
 2. Install the Claude Desktop app from [claude.ai/download](https://claude.ai/download) and open it at least once.

@@ -8,3 +8,4 @@ coverage/
 .vitest-cache/
 *.tsbuildinfo
 *.timestamp-*.mjs
+*.bak*
