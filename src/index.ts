@@ -12,9 +12,10 @@ import { registerListRecentChanges } from "./tools/list_recent_changes.js";
 import { registerGetOpenQuestions } from "./tools/get_open_questions.js";
 import { registerGetDependencyGraph } from "./tools/get_dependency_graph.js";
 import { registerSetActiveProject } from "./tools/set_active_project.js";
+import { registerAppendToMemory } from "./tools/append_to_memory.js";
 
 const SERVER_NAME = "project-memory-mcp";
-const SERVER_VERSION = "0.0.1";
+const SERVER_VERSION = "0.2.0";
 
 async function main(): Promise<void> {
   const server = new McpServer({
@@ -29,6 +30,11 @@ async function main(): Promise<void> {
   registerListRecentChanges(server);
   registerGetOpenQuestions(server);
   registerGetDependencyGraph(server);
+
+  // Write tool — v0.2.0. Registered last so it shows after the reads in
+  // tool listings; conceptually closes the loop of "the brain that
+  // doesn't forget" by giving MEMORY.md a native write path.
+  registerAppendToMemory(server);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
