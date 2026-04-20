@@ -18,6 +18,24 @@ const SERVER_NAME = "project-memory-mcp";
 const SERVER_VERSION = "0.2.0";
 
 async function main(): Promise<void> {
+  const subcommand = process.argv[2];
+
+  // Dispatch CLI subcommands BEFORE booting the MCP server. The installer
+  // writes to stdout normally; the server path below must NOT, because
+  // Claude Desktop reads it as JSON-RPC.
+  if (subcommand === "install" || subcommand === "uninstall") {
+    const cli = await import("./cli/install.js");
+    const handler =
+      subcommand === "install" ? cli.runInstall : cli.runUninstall;
+    await handler(process.argv.slice(3));
+    return;
+  }
+  if (subcommand === "--help" || subcommand === "-h") {
+    const { printUsage } = await import("./cli/install.js");
+    printUsage();
+    return;
+  }
+
   const server = new McpServer({
     name: SERVER_NAME,
     version: SERVER_VERSION,

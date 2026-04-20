@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { promises as fs, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appendToMemory } from "./memory_writes.js";
+import { appendToMemory } from "../src/context/memory_writes.js";
 
 async function setupProject(initialMemory: string): Promise<string> {
   const root = mkdtempSync(join(tmpdir(), "pm-test-"));
