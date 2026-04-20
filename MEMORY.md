@@ -133,6 +133,7 @@ Takeaways:
 
 ## Current state
 
+- **Local paths (Fer's Mac):** project lives at `/Users/feralcaraz/Documents/Claude/Projects/project-memory-mcp`. Mac username is `feralcaraz` (not `fer`). Use this exact path in any `set_active_project` call, any config block, and any command example. Note: `SETUP.md` still references `/Users/fer/code/project-memory-mcp` as a *suggested* layout — that doc is aspirational, not current state. Rule going forward: never use placeholder or documented-but-unverified paths in instructions — always this locked-in path.
 - **Week in plan:** Week 1 of 12. Five tools shipped + CI + benchmark + 46 tests + 6 commits pushed + CI green + dogfood validated + published to npm + **first external install attempt (failed at onboarding UX) + docs rewritten for non-devs**. Well ahead of the S1–3 target on features, starting to feel the distribution edge.
 - **Tests:** 46/46 passing locally. CI green on the matrix (Node 20 & 22 × ubuntu/macos).
 - **Repo:** `feralcarazp/project-memory-mcp` public on GitHub. Tagged `v0.1.0` for the npm release, `v0.1.1` for the docs patch.
@@ -144,7 +145,7 @@ Takeaways:
 
 ## Next steps (suggested, in order)
 
-1. **Unblock hermano's install and get the first real feedback.** Give him the v0.1.1 README, walk him through it once if needed, and capture: which tool he called first, what he expected vs. what he got, where he got confused. This is the single highest-leverage input for tool #6 and for distribution copy. Everything else on this list matters less until we have one successful external run.
+1. v0.1.2 validated with hermano (low-rigor). Respondió positivo al pitch nuevo ("le gusta como está ahora, lo que agreguemos es bienvenido"). Bloqueador original cerrado desde su perspectiva. PENDIENTE confirmar si llegó a instalarlo técnicamente o si solo le gustó el README — ese dato decide si el npx install subcomando sube o baja de prioridad para v2. Preguntar específicamente en el próximo check-in.
 2. **Outreach round: 5–10 friends who use Claude.** Copy the 1-a-1 template from the 90-day plan PDF. Priority is conversation and feedback, not announcement. The installer UX is the likeliest thing to break; treat each install as a mini user test.
 3. **Tool #6 — strategic decision, informed by #1 and #2.** Two candidates, both meaningful scope jumps:
    - `summarize_file` (tree-sitter): AST-aware summary of a single file. Pays for itself if summary stays under ~200 tokens/file. Would be the first tool that needs a non-regex parser. 2–3 sessions.
@@ -166,6 +167,8 @@ Takeaways:
 - Tool #6 direction — `summarize_file` (tree-sitter) vs. `search_project` (indexing). Both are big scope jumps; leaning `summarize_file` first.
 - Should we drop the `@feralcaraz` scope for a "neutral" scope (e.g. a project org on npm) before the soft launch, so future contributors don't feel the name is personal property? Defer until we have contributors.
 - Should we ship a `npx @feralcaraz/project-memory-mcp install` subcommand that edits `claude_desktop_config.json` on the user's behalf (with safe JSON-merge)? First external install failed at this exact step — a one-command installer would make the README mostly irrelevant for the happy path. Defer until 3–5 more installs prove the README fix isn't enough.
+-Tool #6 direction now has a third candidate: append_to_memory. Un write tool nativo para que el usuario (o Claude) agregue líneas a MEMORY.md desde adentro de un chat, sin depender de un MCP de filesystem externo. Surgió al notar que "the brain that doesn't forget" queda a medias sin un camino de escritura. Scope más chico que summarize_file y search_project pero cierra el loop conceptual del producto.
+-Should get_project_context (or a new tool) also return the content of curated docs like BENCHMARKS.md and DECISIONS.md, not just list them in the file tree? Hoy el tool los indexa estructuralmente pero no devuelve su contenido. Revisitar a medida que se acumulan docs curadas.
 
 ## Things we are NOT doing yet
 
