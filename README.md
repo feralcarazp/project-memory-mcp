@@ -6,12 +6,9 @@
 [![License: MIT](https://img.shields.io/npm/l/@feralcaraz/project-memory-mcp.svg)](LICENSE)
 
 
-> A neutral context layer for AI coding tools. Exposes structured, curated project context to any MCP-compatible client (Claude Desktop, Cursor, Claude Code, etc.).
+> **A brain for your AI coding tools — one that doesn't forget.** Project Memory gives Claude, Cursor, and Claude Code a shared, always-fresh view of your codebase, cutting token usage by up to **88%**. [See the benchmark →](./BENCHMARKS.md)
 
-<!-- When demo.gif is recorded, uncomment: -->
-<!-- ![Project Memory MCP demo](assets/demo.gif) -->
-
-**Status:** early development. Published to npm as [`@feralcaraz/project-memory-mcp`](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp).
+**Status:** v0.1.2 on npm — early, actively used and updated. Published as [`@feralcaraz/project-memory-mcp`](https://www.npmjs.com/package/@feralcaraz/project-memory-mcp).
 
 ## Why
 
