@@ -147,12 +147,12 @@ Takeaways:
 
 1. v0.1.2 validated with hermano (low-rigor). Respondió positivo al pitch nuevo ("le gusta como está ahora, lo que agreguemos es bienvenido"). Bloqueador original cerrado desde su perspectiva. PENDIENTE confirmar si llegó a instalarlo técnicamente o si solo le gustó el README — ese dato decide si el npx install subcomando sube o baja de prioridad para v2. Preguntar específicamente en el próximo check-in.
 2. **Outreach round: 5–10 friends who use Claude.** Copy the 1-a-1 template from the 90-day plan PDF. Priority is conversation and feedback, not announcement. The installer UX is the likeliest thing to break; treat each install as a mini user test.
-3. **Tool #6 — strategic decision, informed by #1 and #2.** Two candidates, both meaningful scope jumps:
-   - `summarize_file` (tree-sitter): AST-aware summary of a single file. Pays for itself if summary stays under ~200 tokens/file. Would be the first tool that needs a non-regex parser. 2–3 sessions.
-   - `search_project` (semantic + keyword across code and docs): needs an indexing story. 3–5 sessions.
-   - Leaning `summarize_file` first. But wait for user feedback before locking in — if hermano or the friends ask for something specific (e.g. "I wish it told me where to start"), that reframes the priority.
-4. **Consider a one-command installer (ADR-worthy).** Something like `npx @feralcaraz/project-memory-mcp install` that edits `claude_desktop_config.json` for the user with a proper JSON-merge (respect existing servers), prints the path it wrote to, and tells them to quit-and-relaunch. Would collapse the README recipe into one terminal command. Not today; think about it after 3–5 more installs show whether the README fix is enough.
-5. **Soft launch — deliberate, after #1 and #2.** Show HN / small Twitter thread with the `npx` line + config block. Goal: real bug reports, not stars.
+3. **v0.2.0 — "the brain that writes back + one-command install."** Dos features que juntas cierran el loop de UX:
+   - `append_to_memory({ section, content })` — write tool nativo para que Claude (o el usuario) agregue líneas a `MEMORY.md` desde adentro del chat, sin depender de un filesystem MCP externo. Cierra el gap conceptual de "the brain that doesn't forget" — hasta ahora solo leía. ~2–3 sesiones.
+   - `npx @feralcaraz/project-memory-mcp install` — subcomando que edita `claude_desktop_config.json` con JSON-merge seguro (respeta servers existentes), imprime el path escrito y pide quit-and-relaunch. Colapsa la receta del README a una sola línea. ~3–4 sesiones.
+   - Razón de empacar ambas en v0.2.0: amplían audiencia (developers + AI tinkerers) y bajan la barrera de instalación antes del outreach. Monetización sigue diferida hasta 10+ usuarios activos — v0.2.0 es puramente adopción, no revenue.
+4. **Soft launch — deliberate, after v0.2.0 + outreach.** Show HN / small Twitter thread con la `npx` line + config block. Goal: real bug reports, not stars.
+5. **Tool #7 — decide after v0.2.0 ships y tengamos feedback.** Candidatos en la mesa: `summarize_file` (tree-sitter AST summary, 2–3 sesiones) y `search_project` (semantic + keyword index, 3–5 sesiones). Lock in según lo que los amigos realmente pidan en el outreach.
 6. **Housekeeping, low priority:**
    - Bump `actions/checkout` and `actions/setup-node` to `@v5` whenever GitHub ships it.
    - Consider moving the token benchmark into CI as a regression guard (still leaning no).
@@ -164,10 +164,7 @@ Takeaways:
 - Should `get_dependency_graph` ever resolve `tsconfig.json` `paths` aliases? ADR-011 says no for v1. Revisit when a dogfooder bumps into it.
 - Should the benchmark be part of CI as a regression guard on token counts? Still leaning local-only until we have more data points.
 - Should the active-project cache persist across server restarts (e.g. `~/.config/project-memory-mcp/session.json`)? ADR-012 said no on day one — revisit after a few weeks of real use if people keep re-setting the same project.
-- Tool #6 direction — `summarize_file` (tree-sitter) vs. `search_project` (indexing). Both are big scope jumps; leaning `summarize_file` first.
 - Should we drop the `@feralcaraz` scope for a "neutral" scope (e.g. a project org on npm) before the soft launch, so future contributors don't feel the name is personal property? Defer until we have contributors.
-- Should we ship a `npx @feralcaraz/project-memory-mcp install` subcommand that edits `claude_desktop_config.json` on the user's behalf (with safe JSON-merge)? First external install failed at this exact step — a one-command installer would make the README mostly irrelevant for the happy path. Defer until 3–5 more installs prove the README fix isn't enough.
--Tool #6 direction now has a third candidate: append_to_memory. Un write tool nativo para que el usuario (o Claude) agregue líneas a MEMORY.md desde adentro de un chat, sin depender de un MCP de filesystem externo. Surgió al notar que "the brain that doesn't forget" queda a medias sin un camino de escritura. Scope más chico que summarize_file y search_project pero cierra el loop conceptual del producto.
 -Should get_project_context (or a new tool) also return the content of curated docs like BENCHMARKS.md and DECISIONS.md, not just list them in the file tree? Hoy el tool los indexa estructuralmente pero no devuelve su contenido. Revisitar a medida que se acumulan docs curadas.
 
 ## Things we are NOT doing yet
